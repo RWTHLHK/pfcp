@@ -127,9 +127,9 @@
   [../]
   [./phi_pos]
     type = ComputeNeoHookeanTensileStrainEnergy
+    dimension = 3
     nH1 = 1.0
     nH2 = 1.0
-    dimension = 3
     base_name = uncracked
   [../]
 []

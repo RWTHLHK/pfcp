@@ -19,7 +19,8 @@ _base_name(getParam<std::string>("base_name")),
 _d(getParam<unsigned int>("dimension")),
 _nH1(getParam<Real>("nH1")),
 _nH2(getParam<Real>("nH2")),
-_phi_pos(declareProperty<Real>("neo_Hooken_pos")),
+_phi_pos(declareProperty<Real>(_base_name + "_neo_Hookean_pos")),
+_phi_pos_old(getMaterialPropertyOld<Real>(_base_name + "_neo_Hookean_pos")),
 _deformation_gradient(getMaterialProperty<RankTwoTensor>(_base_name + "_deformation_gradient"))
 {}
 

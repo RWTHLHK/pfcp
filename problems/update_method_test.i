@@ -29,6 +29,10 @@
    order = CONSTANT
    family = MONOMIAL
   [../]
+  [./tau0]
+    family = MONOMIAL
+    order = CONSTANT
+  [../]
 []
 
 [Physics/SolidMechanics/QuasiStatic/all]
@@ -76,6 +80,13 @@
    property = uncracked_slip_increment
    index = 0
    execute_on = timestep_end
+  [../]
+  [./shear_stress0]
+    type = VectorComponentAux
+    component = 0
+    variable = tau0
+    property = uncracked_applied_shear_stress
+    execute_on = timestep_end
   [../]
 []
 
@@ -132,6 +143,16 @@
     nH2 = 1.0
     base_name = uncracked
   [../]
+  [./micro_crack_formation]
+    type = ComputeMicroCrackFormation
+    base_name = uncracked
+    number_slip_systems = 12
+    dot_m0 = 0.001
+    alpha = 1.0
+    cm = 1.0
+    tau_d = 100.0
+    pm = 2.0
+  [../]
 []
 
 [Postprocessors]
@@ -158,6 +179,10 @@
   [./slip_increment]
    type = ElementAverageValue
    variable = uncracked_slip_increment
+  [../]
+  [./tau]
+    type = ElementAverageValue
+    variable = tau0
   [../]
 []
 

@@ -7,8 +7,8 @@ class ComputeNeoHookeanTensileStrainEnergy : public Material {
         static InputParameters validParams();
         ComputeNeoHookeanTensileStrainEnergy(const InputParameters & parameters);
     protected:
-        virtual void computeQpProperties();
-        virtual void initQpStatefulProperties();
+        virtual void computeQpProperties() override;
+        virtual void initQpStatefulProperties() override;
         //member property holds base name
         const std::string _base_name;
         //dimension of the problem
@@ -18,6 +18,7 @@ class ComputeNeoHookeanTensileStrainEnergy : public Material {
         const Real _nH2;
         //tensile part of neo Hookean strain energy
         MaterialProperty<Real> &_phi_pos;
+        const MaterialProperty<Real> &_phi_pos_old;
         // deformation gradient to compute neo Hookean strain energy
         const MaterialProperty<RankTwoTensor> &_deformation_gradient;
 };

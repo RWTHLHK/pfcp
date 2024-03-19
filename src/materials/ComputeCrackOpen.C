@@ -252,14 +252,14 @@ ComputeCrackOpen::computeQpProperties()
     }
   }
 
-  // compute micro cracks formation rate
+  // compute crack opening rate
   std::vector<Real> dot_o(_ns, 0);
   for (const auto i : make_range(_ns))
   {
     dot_o[i] = _dot_crack_open_zero * fo[i] * std::pow(abs(sigma[i] / _sigma_d), _po);
   }
 
-  // update micro cracks formation
+  // update crack opening
   for (const auto i : make_range(_ns))
   {
     _crack_open[_qp][i] += dot_o[i] * _dt;

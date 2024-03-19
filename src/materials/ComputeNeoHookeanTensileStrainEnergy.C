@@ -33,27 +33,30 @@ ComputeNeoHookeanTensileStrainEnergy :: initQpStatefulProperties()
 void
 ComputeNeoHookeanTensileStrainEnergy :: computeQpProperties()
 {
-    // compute right cauchy strain tensor 
+    // compute right cauchy strain tensor
+    Real phi_pos = 0.0;
     RankTwoTensor c = _deformation_gradient[_qp].transpose() * _deformation_gradient[_qp];
     // compute principal stretches of right cauchy strain tensor
     std::vector<Real> lamda;
     c.symmetricEigenvalues(lamda);
-    
+
     // determinant of deformation gradient
     Real J = 1.0;
     //compute tensile part of neo Hookean strain energy
     for(unsigned int i=0;i<_d;++i){
         J *= std::sqrt(lamda[i]);
+        mooseInfo("the principal stretch is",lamda[i]);
         if (lamda[i] >= 1){
-            _phi_pos[_qp] += lamda[i];
+            phi_pos += lamda[i];
         }
     }
     if(J>1){
-        _phi_pos[_qp] -= 2.0 * std::log(J);
-        _phi_pos[_qp] *= _nH1;
-        _phi_pos[_qp] += _nH2*(J - 1.0) * (J - 1.0);
+        phi_pos -= 2.0 * std::log(J);
+        phi_pos *= _nH1;
+        phi_pos += _nH2*(J - 1.0) * (J - 1.0);
     }
     else{
-        _phi_pos[_qp] *= _nH1; // ?
+        phi_pos *= _nH1; // ?
     }
+    _phi_pos[_qp] = phi_pos;
 }

@@ -3,10 +3,26 @@
 []
 
 [Mesh]
-  type = GeneratedMesh
-  dim = 3
-  elem_type = HEX8
+  [gen]
+    type = GeneratedMeshGenerator
+    dim = 3
+    elem_type = HEX8
+    nx = 4
+    ny = 4
+    nz = 4
+  []
 []
+
+[Variables]
+  [./dm]
+   order = FIRST
+   family = LAGRANGE
+  []
+  [./do]
+    order = FIRST
+    family = LAGRANGE
+  []
+ []
 
 [AuxVariables]
   [./uncracked_pk2]
@@ -33,6 +49,14 @@
     family = MONOMIAL
     order = CONSTANT
   [../]
+  [./mf0]
+    family = MONOMIAL
+    order = CONSTANT
+  [../]
+  [./phi]
+    family = MONOMIAL
+    order = CONSTANT
+  [../]
 []
 
 [Physics/SolidMechanics/QuasiStatic/all]
@@ -42,6 +66,27 @@
   base_name = uncracked
 []
 
+[Kernels]
+  [./dot_dm]
+    type = TimeDerivative
+    variable = dm
+  [../]
+  [./ACbulk]
+    type = AllenCahn
+    variable = dm
+    f_name = F
+  [../]
+  [./ACInterface]
+    type = ACInterface
+    variable = dm
+    kappa_name = kappa_op
+    mob_name = L
+  [../]
+  [./dot_do]
+    type = TimeDerivative
+    variable = do
+  [../]
+[]
 [AuxKernels]
   [./uncracked_pk2]
    type = RankTwoAux
@@ -82,10 +127,23 @@
    execute_on = timestep_end
   [../]
   [./shear_stress0]
-    type = VectorComponentAux
-    component = 0
+    type = MaterialStdVectorAux
+    index = 0
     variable = tau0
     property = uncracked_applied_shear_stress
+    execute_on = timestep_end
+  [../]
+  [./micro_crack_formation0]
+    type = MaterialStdVectorAux
+    index = 0
+    variable = mf0
+    property = mf
+    execute_on = timestep_end
+  [../]
+  [./phi_pos]
+    type = MaterialRealAux
+    variable = phi
+    property = uncracked_neo_Hookean_pos
     execute_on = timestep_end
   [../]
 []
@@ -139,8 +197,8 @@
   [./phi_pos]
     type = ComputeNeoHookeanTensileStrainEnergy
     dimension = 3
-    nH1 = 1.0
-    nH2 = 1.0
+    nH1 = 0.377e5
+    nH2 = 0.607e5
     base_name = uncracked
   [../]
   [./micro_crack_formation]
@@ -148,10 +206,67 @@
     base_name = uncracked
     number_slip_systems = 12
     dot_m0 = 0.001
-    alpha = 1.0
+    alpha = 0.0001
     cm = 1.0
-    tau_d = 100.0
-    pm = 2.0
+    tau_d = 71.0
+    pm = 50.0
+    dm = dm
+    d_duc = 0.5
+  [../]
+  [./crack_opening]
+    type = ComputeCrackOpen
+    base_name = uncracked
+    number_slip_systems = 12
+    dot_o0 = 0.001
+    beta = 0.0001
+    co = 1.0
+    sigma_d = 71.0
+    po = 50.0
+    do = do
+    slip_sys_file_name = input_slip_sys.txt
+  [../]
+  [./pfbulkmat]
+    type = GenericConstantMaterial
+    prop_names = 'gc_prop l visco d_duc'
+    prop_values = '1e-3 0.05 1e-6 0.5'
+  [../]
+  [./define_mobility]
+    type = ParsedMaterial
+    material_property_names = 'gc_prop visco'
+    property_name = L
+    expression = '1.0/(gc_prop * visco)'
+  [../]
+  [./define_kappa]
+    type = ParsedMaterial
+    material_property_names = 'gc_prop l'
+    property_name = kappa_op
+    expression = 'gc_prop * l'
+  [../]
+  [./crack_formation_driving_energy]
+    type = DerivativeParsedMaterial
+    property_name = crack_formation_driving_energy
+    material_property_names = 'd_duc'
+    coupled_variables = 'dm mf0'
+    constant_names = 'cm'
+    constant_expressions = '10.0'
+    expression = '1.0/d_duc^2 * (d_duc - dm)^2 * cm * mf0'
+    derivative_order = 2
+  [../]
+  [./local_fracture_energy]
+    type = DerivativeParsedMaterial
+    property_name = local_fracture_energy
+    coupled_variables = 'dm'
+    material_property_names = 'gc_prop l'
+    expression = 'dm^2 * gc_prop / 2 / l'
+    derivative_order = 2
+  [../]
+
+  [./fracture_driving_energy]
+    type = DerivativeSumMaterial
+    coupled_variables = 'dm mf0'
+    sum_materials = 'crack_formation_driving_energy local_fracture_energy'
+    derivative_order = 2
+    property_name = F
   [../]
 []
 
@@ -184,6 +299,23 @@
     type = ElementAverageValue
     variable = tau0
   [../]
+  [./mf]
+    type = ElementAverageValue
+    variable = mf0
+    execute_on = timestep_end
+  [../]
+  [./strain_energy]
+    type = ElementAverageValue
+    variable = phi
+  [../]
+  [./d]
+    type = ElementAverageValue
+    variable = dm
+  [../]
+  [./phi_pos]
+    type = ElementAverageMaterialProperty
+    mat_prop = uncracked_neo_Hookean_pos
+  [../]
 []
 
 [Preconditioning]
@@ -204,11 +336,12 @@
   nl_abs_step_tol = 1e-10
 
   dt = 0.05
-  dtmin = 0.01
+  dtmin = 0.001
   dtmax = 10.0
   num_steps = 10
 []
 
 [Outputs]
   exodus = true
+  csv = true
 []

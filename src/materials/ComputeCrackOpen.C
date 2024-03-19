@@ -50,8 +50,8 @@ ComputeCrackOpen ::ComputeCrackOpen(const InputParameters & parameters)
   : Material(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _ns(getParam<unsigned int>("number_slip_systems")),
-    _crack_open(declareProperty<std::vector<Real>>("ro")),
-    _crack_open_old(getMaterialPropertyOld<std::vector<Real>>("ro")),
+    _crack_open(declareProperty<Real>("ro")),
+    _crack_open_old(getMaterialPropertyOld<Real>("ro")),
     _dot_crack_open_zero(getParam<Real>("dot_o0")),
     _beta(getParam<Real>("beta")),
     _co(getParam<Real>("co")),
@@ -74,7 +74,7 @@ ComputeCrackOpen ::ComputeCrackOpen(const InputParameters & parameters)
 void
 ComputeCrackOpen::initQpStatefulProperties()
 {
-  _crack_open[_qp].resize(_ns, 0.0);
+  _crack_open[_qp] = 0.0;
   _normal_tensor[_qp].resize(_ns);
   for (const auto i : make_range(_ns))
   {
@@ -212,6 +212,7 @@ ComputeCrackOpen::computeQpProperties()
 {
   const Real d = _do[_qp];
   getSlipSystems();
+  _crack_open[_qp] = _crack_open_old[_qp];
   // compute resolved normal stress
   std::vector<RealVectorValue> local_plane_normal;
   local_plane_normal.resize(_ns);
@@ -238,30 +239,28 @@ ComputeCrackOpen::computeQpProperties()
   for (const auto i : make_range(_ns))
   {
     sigma[i] = _pk2[_qp].doubleContraction(_normal_tensor[_qp][i]);
+    if (sigma[i] < 0){
+      sigma[i] = 0.0;
+    }
   }
   // compute degration function of damage
   Real ho = std::pow(1.0 - d, 2);
   //  compute generalized energetic force
-  std::vector<Real> fo(_ns, 0.0);
-  for (const auto i : make_range(_ns))
+  Real fo = 0.5 * _beta * std::exp(-_beta * _crack_open[_qp]) * _phi_pos[_qp] - ho * _co;
+  if (fo < 0)
   {
-    fo[i] = 0.5 * _beta * std::exp(-_beta * _crack_open[_qp][i]) * _phi_pos[_qp] - ho * _co;
-    if (fo[i] < 0)
-    {
-      fo[i] = 0.0;
-    }
+    fo = 0.0;
   }
-
   // compute crack opening rate
   std::vector<Real> dot_o(_ns, 0);
   for (const auto i : make_range(_ns))
   {
-    dot_o[i] = _dot_crack_open_zero * fo[i] * std::pow(abs(sigma[i] / _sigma_d), _po);
+    dot_o[i] = _dot_crack_open_zero * fo * std::pow(abs(sigma[i] / _sigma_d), _po);
   }
 
   // update crack opening
   for (const auto i : make_range(_ns))
   {
-    _crack_open[_qp][i] += dot_o[i] * _dt;
+    _crack_open[_qp] += dot_o[i] * _dt;
   }
 }

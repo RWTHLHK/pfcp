@@ -14,9 +14,9 @@ protected:
   const std::string _base_name;
   // number of slip systems
   const unsigned int _ns;
-  // member property holds micro crack formation
-  MaterialProperty<std::vector<Real>> & _micro_crack_formation;
-  const MaterialProperty<std::vector<Real>> & _micro_crack_formation_old;
+  //member property to hold total micro crack formation
+  MaterialProperty<Real> & _micro_crack_formation;
+  const MaterialProperty<Real> & _micro_crack_formation_old;
   // member property holds initial micro crack formation rate
   const Real & _dot_micro_crack_formation_zero;
   // micro formation degradation coefficient

@@ -18,10 +18,6 @@
    order = FIRST
    family = LAGRANGE
   []
-  [./do]
-    order = FIRST
-    family = LAGRANGE
-  []
  []
 
 [AuxVariables]
@@ -49,10 +45,6 @@
     family = MONOMIAL
     order = CONSTANT
   [../]
-  [./mf0]
-    family = MONOMIAL
-    order = CONSTANT
-  [../]
   [./phi]
     family = MONOMIAL
     order = CONSTANT
@@ -71,20 +63,16 @@
     type = TimeDerivative
     variable = dm
   [../]
-  [./ACbulk]
+  [./ACbulkm]
     type = AllenCahn
     variable = dm
     f_name = F
   [../]
-  [./ACInterface]
+  [./ACInterfacem]
     type = ACInterface
     variable = dm
     kappa_name = kappa_op
     mob_name = L
-  [../]
-  [./dot_do]
-    type = TimeDerivative
-    variable = do
   [../]
 []
 [AuxKernels]
@@ -131,13 +119,6 @@
     index = 0
     variable = tau0
     property = uncracked_applied_shear_stress
-    execute_on = timestep_end
-  [../]
-  [./micro_crack_formation0]
-    type = MaterialStdVectorAux
-    index = 0
-    variable = mf0
-    property = mf
     execute_on = timestep_end
   [../]
   [./phi_pos]
@@ -206,7 +187,7 @@
     base_name = uncracked
     number_slip_systems = 12
     dot_m0 = 0.001
-    alpha = 0.0001
+    alpha = 0.001
     cm = 1.0
     tau_d = 71.0
     pm = 50.0
@@ -217,12 +198,12 @@
     type = ComputeCrackOpen
     base_name = uncracked
     number_slip_systems = 12
-    dot_o0 = 0.001
+    dot_o0 = 0.1
     beta = 0.0001
     co = 1.0
-    sigma_d = 71.0
-    po = 50.0
-    do = do
+    sigma_d = 170.0
+    po = 3
+    do = dm
     slip_sys_file_name = input_slip_sys.txt
   [../]
   [./pfbulkmat]
@@ -245,11 +226,11 @@
   [./crack_formation_driving_energy]
     type = DerivativeParsedMaterial
     property_name = crack_formation_driving_energy
-    material_property_names = 'd_duc'
-    coupled_variables = 'dm mf0'
+    material_property_names = 'd_duc mf'
+    coupled_variables = 'dm'
     constant_names = 'cm'
-    constant_expressions = '10.0'
-    expression = '1.0/d_duc^2 * (d_duc - dm)^2 * cm * mf0'
+    constant_expressions = '1.0'
+    expression = '1.0/d_duc^2 * (d_duc - dm)^2 * cm * mf'
     derivative_order = 2
   [../]
   [./local_fracture_energy]
@@ -260,11 +241,20 @@
     expression = 'dm^2 * gc_prop / 2 / l'
     derivative_order = 2
   [../]
-
+  [./crack_open_driving_energy]
+    type = DerivativeParsedMaterial
+    property_name = crack_open_driving_energy
+    material_property_names = 'ro'
+    coupled_variables = 'dm'
+    constant_names = 'co'
+    constant_expressions = '1.0'
+    expression = '(1 - dm)^2 * co * ro'
+    derivative_order = 2
+  [../]
   [./fracture_driving_energy]
     type = DerivativeSumMaterial
-    coupled_variables = 'dm mf0'
-    sum_materials = 'crack_formation_driving_energy local_fracture_energy'
+    coupled_variables = 'dm'
+    sum_materials = 'crack_formation_driving_energy crack_open_driving_energy local_fracture_energy'
     derivative_order = 2
     property_name = F
   [../]
@@ -300,18 +290,20 @@
     variable = tau0
   [../]
   [./mf]
-    type = ElementAverageValue
-    variable = mf0
+    type = ElementAverageMaterialProperty
+    mat_prop = mf
     execute_on = timestep_end
   [../]
-  [./strain_energy]
-    type = ElementAverageValue
-    variable = phi
+  [./ro]
+    type = ElementAverageMaterialProperty
+    mat_prop = ro
+    execute_on = timestep_end
   [../]
-  [./d]
+  [./dm]
     type = ElementAverageValue
     variable = dm
   [../]
+
   [./phi_pos]
     type = ElementAverageMaterialProperty
     mat_prop = uncracked_neo_Hookean_pos
@@ -338,7 +330,7 @@
   dt = 0.05
   dtmin = 0.001
   dtmax = 10.0
-  num_steps = 10
+  num_steps = 50
 []
 
 [Outputs]

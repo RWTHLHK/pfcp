@@ -14,7 +14,7 @@
 []
 
 [Variables]
-  [./dm]
+  [./d]
    order = FIRST
    family = LAGRANGE
   []
@@ -73,16 +73,16 @@
 [Kernels]
   [./dot_dm]
     type = TimeDerivative
-    variable = dm
+    variable = d
   [../]
   [./ACbulkm]
     type = AllenCahn
-    variable = dm
+    variable = d
     f_name = F
   [../]
   [./ACInterfacem]
     type = ACInterface
-    variable = dm
+    variable = d
     kappa_name = kappa_op
     mob_name = L
   [../]
@@ -199,58 +199,36 @@
   [./cracked_stress]
     type = ComputeGeneralizedOrowanCrackedStress
     uncracked_base_name = uncracked
-  [../]
-  [./micro_crack_formation]
-    type = ComputeMicroCrackFormation
-    base_name = uncracked
     number_slip_systems = 12
     dot_m0 = 0.001
     alpha = 0.0001
     cm = 1.0
     tau_d = 71.0
     pm = 50
-    dm = dm
+    d = d
     d_duc = 0.5
-  [../]
-  [./crack_opening]
-    type = ComputeCrackOpen
-    base_name = uncracked
-    number_slip_systems = 12
+
     dot_o0 = 0.01
     beta = 0.0005
-    co = 9.4
+    co = 1.0
     sigma_d = 56
     po = 20
-    do = dm
     slip_sys_file_name = input_slip_sys.txt
   [../]
-  [./crack_formation_degradation]
-    type = ParsedMaterial
-    property_name = crack_formation_degradation
-    material_property_names = 'mf'
-    constant_names = 'alpha'
-    constant_expressions = '1e-3'
-    expression = '0.5*exp(-alpha * mf)'
-  [../]
-  [./crack_open_degradation]
-    type = ParsedMaterial
-    property_name = crack_open_degradation
-    material_property_names = 'ro'
-    constant_names = 'beta'
-    constant_expressions = '0.0005'
-    expression = '0.5 * exp(-beta * ro)'
-  [../]
+
   [./pfbulkmat]
     type = GenericConstantMaterial
     prop_names = 'gc_prop l visco d_duc'
     prop_values = '1e-3 0.05 1e-6 0.5'
   [../]
+
   [./define_mobility]
     type = ParsedMaterial
     material_property_names = 'gc_prop visco'
     property_name = L
     expression = '1.0/(gc_prop * visco)'
   [../]
+
   [./define_kappa]
     type = ParsedMaterial
     material_property_names = 'gc_prop l'
@@ -261,33 +239,33 @@
     type = DerivativeParsedMaterial
     property_name = crack_formation_driving_energy
     material_property_names = 'd_duc mf'
-    coupled_variables = 'dm'
+    coupled_variables = 'd'
     constant_names = 'cm'
     constant_expressions = '1.0'
-    expression = '1.0/d_duc^2 * (d_duc - dm)^2 * cm * mf'
+    expression = '1.0/d_duc^2 * (d_duc - d)^2 * cm * mf'
     derivative_order = 2
   [../]
   [./local_fracture_energy]
     type = DerivativeParsedMaterial
     property_name = local_fracture_energy
-    coupled_variables = 'dm'
+    coupled_variables = 'd'
     material_property_names = 'gc_prop l'
-    expression = 'dm^2 * gc_prop / 2 / l'
+    expression = 'd^2 * gc_prop / 2 / l'
     derivative_order = 2
   [../]
   [./crack_open_driving_energy]
     type = DerivativeParsedMaterial
     property_name = crack_open_driving_energy
     material_property_names = 'ro'
-    coupled_variables = 'dm'
+    coupled_variables = 'd'
     constant_names = 'co'
-    constant_expressions = '9.4'
-    expression = '(1 - dm)^2 * co * ro'
+    constant_expressions = '1.0'
+    expression = '(1 - d)^2 * co * ro'
     derivative_order = 2
   [../]
   [./fracture_driving_energy]
     type = DerivativeSumMaterial
-    coupled_variables = 'dm'
+    coupled_variables = 'd'
     sum_materials = 'crack_formation_driving_energy crack_open_driving_energy local_fracture_energy'
     derivative_order = 2
     property_name = F
@@ -335,7 +313,7 @@
   [../]
   [./dm]
     type = ElementAverageValue
-    variable = dm
+    variable = d
   [../]
   [./norm]
     type = ElementAverageValue
@@ -343,13 +321,13 @@
   [../]
   [./phi_pos]
     type = ElementAverageMaterialProperty
-    mat_prop = uncracked_cp_phi_pos
+    mat_prop = cp_phi_pos
   [../]
-  [./uncracked_cauchy_stress]
+  [./uncracked_pk2]
     type = ElementAverageValue
     variable = c0
   [../]
-  [./cracked_cauchy_stress]
+  [./cracked_pk2]
     type = ElementAverageValue
     variable = c1
   [../]

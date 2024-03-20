@@ -54,7 +54,7 @@ ComputeGeneralizedOrowanCrackedStress::validParams()
 ComputeGeneralizedOrowanCrackedStress::ComputeGeneralizedOrowanCrackedStress(
     const InputParameters & parameters)
   : Material(parameters),
-    _uncracked_base_name(getParam<std::string>("uncracked_base_name")),
+    _uncracked_base_name(isParamValid("uncracked_base_name") ? getParam<std::string>("uncracked_base_name") + "_" : ""),
     _ns(getParam<unsigned int>("number_slip_systems")),
     _micro_crack_formation(declareProperty<Real>("mf")),
     _micro_crack_formation_old(getMaterialPropertyOld<Real>("mf")),

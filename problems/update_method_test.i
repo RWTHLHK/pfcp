@@ -49,6 +49,18 @@
     family = MONOMIAL
     order = CONSTANT
   [../]
+  [./normal_stress]
+    family = MONOMIAL
+    order = CONSTANT
+  [../]
+  [./c0]
+    family = MONOMIAL
+    order = CONSTANT
+  [../]
+  [./c1]
+    family = MONOMIAL
+    order = CONSTANT
+  [../]
 []
 
 [Physics/SolidMechanics/QuasiStatic/all]
@@ -83,6 +95,22 @@
    index_j = 2
    index_i = 2
    execute_on = timestep_end
+  [../]
+  [./uncracked_cauchy_stress]
+    type = RankTwoAux
+    variable = c0
+    rank_two_tensor = uncracked_cauchy_stress
+    index_j = 2
+    index_i = 2
+    execute_on = timestep_end
+  [../]
+  [./cracked_cauchy_stress]
+    type = RankTwoAux
+    variable = c1
+    rank_two_tensor = cracked_cauchy_stress
+    index_j = 2
+    index_i = 2
+    execute_on = timestep_end
   [../]
   [./uncracked_fp_zz]
     type = RankTwoAux
@@ -125,6 +153,13 @@
     type = MaterialRealAux
     variable = phi
     property = uncracked_neo_Hookean_pos
+    execute_on = timestep_end
+  [../]
+  [./normal_stress0]
+    type = MaterialStdVectorAux
+    index = 0
+    variable = normal_stress
+    property = resolved_normal_stress
     execute_on = timestep_end
   [../]
 []
@@ -198,11 +233,11 @@
     type = ComputeCrackOpen
     base_name = uncracked
     number_slip_systems = 12
-    dot_o0 = 0.1
+    dot_o0 = 0.01
     beta = 0.0001
     co = 1.0
-    sigma_d = 170.0
-    po = 3
+    sigma_d = 56
+    po = 10
     do = dm
     slip_sys_file_name = input_slip_sys.txt
   [../]
@@ -258,6 +293,28 @@
     derivative_order = 2
     property_name = F
   [../]
+  [./crack_formation_degradation]
+    type = ParsedMaterial
+    property_name = crack_formation_degradation
+    material_property_names = 'mf'
+    constant_names = 'alpha'
+    constant_expressions = '1e-3'
+    expression = '0.5*exp(-alpha * mf)'
+  [../]
+  [./crack_open_degradation]
+    type = ParsedMaterial
+    property_name = crack_open_degradation
+    material_property_names = 'ro'
+    constant_names = 'beta'
+    constant_expressions = '1e-4'
+    expression = '0.5 * 1e-5 / (1e-5 + beta*ro)'
+  [../]
+  [./cracked_stress]
+    type = ComputeGeneralizedOrowanCrackedStress
+    nH1 = 0.377e5
+    nH2 = 0.607e5
+    uncracked_base_name = uncracked
+  [../]
 []
 
 [Postprocessors]
@@ -303,10 +360,21 @@
     type = ElementAverageValue
     variable = dm
   [../]
-
+  [./norm]
+    type = ElementAverageValue
+    variable = normal_stress
+  [../]
   [./phi_pos]
     type = ElementAverageMaterialProperty
     mat_prop = uncracked_neo_Hookean_pos
+  [../]
+  [./uncracked_cauchy_stress]
+    type = ElementAverageValue
+    variable = c0
+  [../]
+  [./cracked_cauchy_stress]
+    type = ElementAverageValue
+    variable = c1
   [../]
 []
 

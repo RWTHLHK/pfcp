@@ -21,4 +21,6 @@ class ComputeNeoHookeanTensileStrainEnergy : public Material {
         const MaterialProperty<Real> &_phi_pos_old;
         // deformation gradient to compute neo Hookean strain energy
         const MaterialProperty<RankTwoTensor> &_deformation_gradient;
+        // deformation gradient to compute neo Hookean strain energy
+        const MaterialProperty<RankTwoTensor> &_plastic_deformation_gradient;
 };

@@ -55,6 +55,7 @@ ComputeCrackOpen ::ComputeCrackOpen(const InputParameters & parameters)
     _dot_crack_open_zero(getParam<Real>("dot_o0")),
     _beta(getParam<Real>("beta")),
     _co(getParam<Real>("co")),
+    _sigma(declareProperty<std::vector<Real>>("resolved_normal_stress")),
     _sigma_d(getParam<Real>("sigma_d")),
     _po(getParam<Real>("po")),
     _phi_pos(getMaterialProperty<Real>(_base_name + "neo_Hookean_pos")),
@@ -76,9 +77,11 @@ ComputeCrackOpen::initQpStatefulProperties()
 {
   _crack_open[_qp] = 0.0;
   _normal_tensor[_qp].resize(_ns);
+  _sigma[_qp].resize(_ns);
   for (const auto i : make_range(_ns))
   {
     _normal_tensor[_qp][i].zero();
+    _sigma[_qp][i] = 0.0;
   }
 }
 
@@ -238,7 +241,8 @@ ComputeCrackOpen::computeQpProperties()
   std::vector<Real> sigma(_ns, 0.0);
   for (const auto i : make_range(_ns))
   {
-    sigma[i] = _pk2[_qp].doubleContraction(_normal_tensor[_qp][i]);
+    _sigma[_qp][i] = _pk2[_qp].doubleContraction(_normal_tensor[_qp][i]);
+    sigma[i] = _sigma[_qp][i];
     if (sigma[i] < 0){
       sigma[i] = 0.0;
     }

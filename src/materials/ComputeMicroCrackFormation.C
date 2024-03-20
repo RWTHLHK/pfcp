@@ -35,7 +35,7 @@ ComputeMicroCrackFormation ::ComputeMicroCrackFormation(const InputParameters & 
     _cm(getParam<Real>("cm")),
     _tau_d(getParam<Real>("tau_d")),
     _pm(getParam<Real>("pm")),
-    _phi_pos(getMaterialProperty<Real>(_base_name + "neo_Hookean_pos")),
+    _cp_phi_pos(getMaterialProperty<Real>(_base_name + "cp_phi_pos")),
     _tau(getMaterialProperty<std::vector<Real>>(_base_name + "applied_shear_stress")),
     _dm(coupledValue("dm")),
     _d_duc(getParam<Real>("d_duc"))
@@ -59,7 +59,7 @@ ComputeMicroCrackFormation::computeQpProperties()
     // compute degration function of damage
     Real hm = 1.0 / std::pow(_d_duc, 2) * std::pow(_d_duc - d, 2);
     //  compute generalized energetic force
-    Real fm = 0.5 * _alpha * std::exp(-_alpha * _micro_crack_formation[_qp]) * _phi_pos[_qp] - hm * _cm;
+    Real fm = 0.5 * _alpha * std::exp(-_alpha * _micro_crack_formation[_qp]) * _cp_phi_pos[_qp] - hm * _cm;
     if (fm < 0){
       fm = 0.0;
     }

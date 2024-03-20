@@ -58,7 +58,7 @@ ComputeCrackOpen ::ComputeCrackOpen(const InputParameters & parameters)
     _sigma(declareProperty<std::vector<Real>>("resolved_normal_stress")),
     _sigma_d(getParam<Real>("sigma_d")),
     _po(getParam<Real>("po")),
-    _phi_pos(getMaterialProperty<Real>(_base_name + "neo_Hookean_pos")),
+    _cp_phi_pos(getMaterialProperty<Real>(_base_name + "cp_phi_pos")),
     _pk2(getMaterialProperty<RankTwoTensor>("second_piola_kirchhoff_stress")),
     _do(coupledValue("do")),
     _normal_tensor(declareProperty<std::vector<RankTwoTensor>>(_base_name + "normal_tensor")),
@@ -250,7 +250,7 @@ ComputeCrackOpen::computeQpProperties()
   // compute degration function of damage
   Real ho = std::pow(1.0 - d, 2);
   //  compute generalized energetic force
-  Real fo = 0.5 * _beta * std::exp(-_beta * _crack_open[_qp]) * _phi_pos[_qp] - ho * _co;
+  Real fo = 0.5 * _beta * std::exp(-_beta * _crack_open[_qp]) * _cp_phi_pos[_qp] - ho * _co;
   if (fo < 0)
   {
     fo = 0.0;

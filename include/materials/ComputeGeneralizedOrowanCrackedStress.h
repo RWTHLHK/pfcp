@@ -5,6 +5,7 @@
 #include "RankFourTensor.h"
 #include "RotationTensor.h"
 #include "DerivativeMaterialInterface.h"
+#include "DelimitedFileReader.h"
 
 /**
  * Computes energy and modifies the stress for phase field fracture. Can be used with any
@@ -20,24 +21,77 @@ public:
 protected:
   virtual void computeQpProperties();
   virtual void initQpStatefulProperties();
+  void computeCrackFormation();
+  void computeCrackOpen();
+  void computeCrackFormationDegradation();
+  void getSlipSystems();
+  void transformHexagonalMillerBravaisSlipSystems(const MooseUtils::DelimitedFileReader & reader);
+  void computeCrackOpenDegradation();
   /// Base name of the stress after being modified to include cracks
-  const std::string _base_name;
-
-  /// Base name of the uncracked stress and strain
   const std::string _uncracked_base_name;
-  //neo Hookean constants mu/2 and lambda/2
-  const Real _nH1;
-  const Real _nH2;
-  /// deformation gradient
-  const MaterialProperty<RankTwoTensor> &_deformation_gradient;
-  /// plastic deformation gradient
-  const MaterialProperty<RankTwoTensor> &_plastic_deformation_gradient;
+  // number of slip systems
+  const unsigned int _ns;
+  //member property to hold total micro crack formation
+  MaterialProperty<Real> & _micro_crack_formation;
+  const MaterialProperty<Real> & _micro_crack_formation_old;
+  // member property holds initial micro crack formation rate
+  const Real & _dot_micro_crack_formation_zero;
+  // micro formation degradation coefficient
+  const Real _alpha;
+  // micro crack free energy coeffiecient
+  const Real _cm;
+  // critical resolved shear stress to trigger micro crack formation
+  const Real _tau_d;
+  // degree of tau/taud
+  const Real _pm;
+  // resolved shear stress
+  const MaterialProperty<std::vector<Real>> & _tau;
+  // damage value
+  const VariableValue & _d;
+  // crtitical damage value
+  const Real _d_duc;
   /// micro crack formation degradation
-  const MaterialProperty<Real> &_crack_formation_degradation;
+  MaterialProperty<Real> &_crack_formation_degradation;
+  
+  // member property holds micro crack formation
+  MaterialProperty<Real> & _crack_open;
+  const MaterialProperty<Real> & _crack_open_old;
+  // member property holds initial micro crack formation rate
+  const Real & _dot_crack_open_zero;
+  // micro formation degradation coefficient
+  const Real _beta;
+  // micro crack free energy coeffiecient
+  const Real _co;
+  // critical resolved normal stress to trigger micro crack formation
+  // resolved normal stress
+  MaterialProperty<std::vector<Real>> &_sigma;
+  const Real _sigma_d;
+  // degree of tau/taud
+  const Real _po;
+  // cleavage plane normal tensor
+  MaterialProperty<std::vector<RankTwoTensor>> & _normal_tensor;
+  // crysrot
+  const MaterialProperty<RankTwoTensor> & _crysrot;
+  // slip plane normal
+  std::vector<RealVectorValue> _slip_plane_normal;
+  // file name
+  std::string _slip_sys_file_name;
+  const enum class CrystalLatticeType { BCC, FCC, HCP } _crystal_lattice_type;
+  const std::vector<Real> _unit_cell_dimension;
+  Real _zero_tol;
   /// crack opening degratdaion
-  const MaterialProperty<Real> &_crack_open_degradation;
-  /// uncracked cauchy stress
-  MaterialProperty<RankTwoTensor> &_uncracked_cauchy_stress;
-  /// cracked cauchy stress
-  MaterialProperty<RankTwoTensor> &_cracked_cauchy_stress;
+  MaterialProperty<Real> &_crack_open_degradation;
+  
+  /// uncracked pk2 stress
+  const MaterialProperty<RankTwoTensor> &_uncracked_pk2;
+  MaterialProperty<RankTwoTensor> &_uncracked_pk2_pos;
+  const MaterialProperty<RankTwoTensor> &_uncracked_pk2_pos_old;
+  /// cracked pk2 stress
+  MaterialProperty<RankTwoTensor> &_cracked_pk2;
+  // tensile part strain energy
+  MaterialProperty<Real> &_cp_phi_pos;
+  const MaterialProperty<Real> &_cp_phi_pos_old;
+  // Green-Lagrangian strain 
+  const MaterialProperty<RankTwoTensor> &_total_lagrangian_strain;
+  const MaterialProperty<RankTwoTensor> &_total_lagrangian_strain_old;
 };

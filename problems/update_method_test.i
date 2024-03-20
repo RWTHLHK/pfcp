@@ -96,18 +96,10 @@
    index_i = 2
    execute_on = timestep_end
   [../]
-  [./uncracked_cauchy_stress]
-    type = RankTwoAux
-    variable = c0
-    rank_two_tensor = uncracked_cauchy_stress
-    index_j = 2
-    index_i = 2
-    execute_on = timestep_end
-  [../]
-  [./cracked_cauchy_stress]
+  [./cracked_pk2]
     type = RankTwoAux
     variable = c1
-    rank_two_tensor = cracked_cauchy_stress
+    rank_two_tensor = cracked_pk2
     index_j = 2
     index_i = 2
     execute_on = timestep_end
@@ -147,12 +139,6 @@
     index = 0
     variable = tau0
     property = uncracked_applied_shear_stress
-    execute_on = timestep_end
-  [../]
-  [./phi_pos]
-    type = MaterialRealAux
-    variable = phi
-    property = uncracked_neo_Hookean_pos
     execute_on = timestep_end
   [../]
   [./normal_stress0]
@@ -210,22 +196,19 @@
     tan_mod_type = exact
     base_name = uncracked
   [../]
-  [./phi_pos]
-    type = ComputeNeoHookeanTensileStrainEnergy
-    dimension = 3
-    nH1 = 0.377e5
-    nH2 = 0.607e5
-    base_name = uncracked
+  [./cracked_stress]
+    type = ComputeGeneralizedOrowanCrackedStress
+    uncracked_base_name = uncracked
   [../]
   [./micro_crack_formation]
     type = ComputeMicroCrackFormation
     base_name = uncracked
     number_slip_systems = 12
     dot_m0 = 0.001
-    alpha = 0.001
+    alpha = 0.0001
     cm = 1.0
     tau_d = 71.0
-    pm = 50.0
+    pm = 50
     dm = dm
     d_duc = 0.5
   [../]
@@ -234,12 +217,28 @@
     base_name = uncracked
     number_slip_systems = 12
     dot_o0 = 0.01
-    beta = 0.0001
-    co = 1.0
+    beta = 0.0005
+    co = 9.4
     sigma_d = 56
-    po = 10
+    po = 20
     do = dm
     slip_sys_file_name = input_slip_sys.txt
+  [../]
+  [./crack_formation_degradation]
+    type = ParsedMaterial
+    property_name = crack_formation_degradation
+    material_property_names = 'mf'
+    constant_names = 'alpha'
+    constant_expressions = '1e-3'
+    expression = '0.5*exp(-alpha * mf)'
+  [../]
+  [./crack_open_degradation]
+    type = ParsedMaterial
+    property_name = crack_open_degradation
+    material_property_names = 'ro'
+    constant_names = 'beta'
+    constant_expressions = '0.0005'
+    expression = '0.5 * exp(-beta * ro)'
   [../]
   [./pfbulkmat]
     type = GenericConstantMaterial
@@ -282,7 +281,7 @@
     material_property_names = 'ro'
     coupled_variables = 'dm'
     constant_names = 'co'
-    constant_expressions = '1.0'
+    constant_expressions = '9.4'
     expression = '(1 - dm)^2 * co * ro'
     derivative_order = 2
   [../]
@@ -292,28 +291,6 @@
     sum_materials = 'crack_formation_driving_energy crack_open_driving_energy local_fracture_energy'
     derivative_order = 2
     property_name = F
-  [../]
-  [./crack_formation_degradation]
-    type = ParsedMaterial
-    property_name = crack_formation_degradation
-    material_property_names = 'mf'
-    constant_names = 'alpha'
-    constant_expressions = '1e-3'
-    expression = '0.5*exp(-alpha * mf)'
-  [../]
-  [./crack_open_degradation]
-    type = ParsedMaterial
-    property_name = crack_open_degradation
-    material_property_names = 'ro'
-    constant_names = 'beta'
-    constant_expressions = '1e-4'
-    expression = '0.5 * 1e-5 / (1e-5 + beta*ro)'
-  [../]
-  [./cracked_stress]
-    type = ComputeGeneralizedOrowanCrackedStress
-    nH1 = 0.377e5
-    nH2 = 0.607e5
-    uncracked_base_name = uncracked
   [../]
 []
 
@@ -366,7 +343,7 @@
   [../]
   [./phi_pos]
     type = ElementAverageMaterialProperty
-    mat_prop = uncracked_neo_Hookean_pos
+    mat_prop = uncracked_cp_phi_pos
   [../]
   [./uncracked_cauchy_stress]
     type = ElementAverageValue
@@ -395,10 +372,10 @@
   nl_rel_tol = 1e-10
   nl_abs_step_tol = 1e-10
 
-  dt = 0.05
+  dt = 0.025
   dtmin = 0.001
   dtmax = 10.0
-  num_steps = 50
+  num_steps = 1
 []
 
 [Outputs]

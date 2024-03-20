@@ -27,8 +27,8 @@ protected:
   const Real & _tau_d;
   // degree of tau/taud
   const Real & _pm;
-  // tensile part of neo Hookean strain energy
-  const MaterialProperty<Real> & _phi_pos;
+  // tensile part of strain energy
+  const MaterialProperty<Real> & _cp_phi_pos;
   // resolved shear stress
   const MaterialProperty<std::vector<Real>> & _tau;
   // damage value

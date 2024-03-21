@@ -21,10 +21,6 @@
  []
 
 [AuxVariables]
-  [./uncracked_pk2]
-    order = CONSTANT
-    family = MONOMIAL
-  [../]
   [./uncracked_fp_zz]
     order = CONSTANT
     family = MONOMIAL
@@ -90,7 +86,7 @@
 [AuxKernels]
   [./uncracked_pk2]
    type = RankTwoAux
-   variable = uncracked_pk2
+   variable = c0
    rank_two_tensor = second_piola_kirchhoff_stress
    index_j = 2
    index_i = 2
@@ -200,26 +196,26 @@
     type = ComputeGeneralizedOrowanCrackedStress
     uncracked_base_name = uncracked
     number_slip_systems = 12
-    dot_m0 = 0.001
-    alpha = 0.0001
-    cm = 1.0
+    dot_m0 = 0.2
+    alpha = 1.0
+    cm = 0.3
     tau_d = 71.0
-    pm = 50
+    pm = 3
     d = d
-    d_duc = 0.5
+    d_duc = 0.8
 
-    dot_o0 = 0.01
-    beta = 0.0005
-    co = 1.0
-    sigma_d = 56
-    po = 20
+    dot_o0 = 0.5
+    beta = 1.0
+    co = 0.5
+    sigma_d = 53.0
+    po = 5
     slip_sys_file_name = input_slip_sys.txt
   [../]
 
   [./pfbulkmat]
     type = GenericConstantMaterial
     prop_names = 'gc_prop l visco d_duc'
-    prop_values = '1e-3 0.05 1e-6 0.5'
+    prop_values = '1e-3 0.05 1e-6 0.8'
   [../]
 
   [./define_mobility]
@@ -241,7 +237,7 @@
     material_property_names = 'd_duc mf'
     coupled_variables = 'd'
     constant_names = 'cm'
-    constant_expressions = '1.0'
+    constant_expressions = '0.3'
     expression = '1.0/d_duc^2 * (d_duc - d)^2 * cm * mf'
     derivative_order = 2
   [../]
@@ -259,7 +255,7 @@
     material_property_names = 'ro'
     coupled_variables = 'd'
     constant_names = 'co'
-    constant_expressions = '1.0'
+    constant_expressions = '0.5'
     expression = '(1 - d)^2 * co * ro'
     derivative_order = 2
   [../]
@@ -277,10 +273,7 @@
     type = ElementAverageValue
     variable = uncracked_stress_zz
   [../]
-  [./pk2]
-   type = ElementAverageValue
-   variable = uncracked_pk2
-  [../]
+
   [./fp_zz]
     type = ElementAverageValue
     variable = uncracked_fp_zz
@@ -311,7 +304,7 @@
     mat_prop = ro
     execute_on = timestep_end
   [../]
-  [./dm]
+  [./d]
     type = ElementAverageValue
     variable = d
   [../]
@@ -353,7 +346,11 @@
   dt = 0.025
   dtmin = 0.001
   dtmax = 10.0
-  num_steps = 1
+  num_steps = 50
+  [./Predictor]
+    type = SimplePredictor
+    scale = 1.0
+  [../]
 []
 
 [Outputs]

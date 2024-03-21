@@ -8,7 +8,8 @@ ComputeGeneralizedOrowanCrackedStress::validParams()
 {
   InputParameters params = Material::validParams();
   params.addClassDescription("compute cracked pk2 stress and tensile strain energy");
-  params.addParam<std::string>("uncracked_base_name", "The base name used to save the cracked stress");
+  params.addParam<std::string>("uncracked_base_name",
+                               "The base name used to save the cracked stress");
   params.addRequiredParam<Real>("dot_m0", "initial formation rate");
   params.addRequiredParam<Real>("alpha", "micro formation degradation coefficient");
   params.addRequiredParam<Real>("cm", "micro crack free energy coeffiecient");
@@ -54,7 +55,9 @@ ComputeGeneralizedOrowanCrackedStress::validParams()
 ComputeGeneralizedOrowanCrackedStress::ComputeGeneralizedOrowanCrackedStress(
     const InputParameters & parameters)
   : Material(parameters),
-    _uncracked_base_name(isParamValid("uncracked_base_name") ? getParam<std::string>("uncracked_base_name") + "_" : ""),
+    _uncracked_base_name(isParamValid("uncracked_base_name")
+                             ? getParam<std::string>("uncracked_base_name") + "_"
+                             : ""),
     _ns(getParam<unsigned int>("number_slip_systems")),
     _micro_crack_formation(declareProperty<Real>("mf")),
     _micro_crack_formation_old(getMaterialPropertyOld<Real>("mf")),
@@ -66,7 +69,8 @@ ComputeGeneralizedOrowanCrackedStress::ComputeGeneralizedOrowanCrackedStress(
     _tau(getMaterialProperty<std::vector<Real>>(_uncracked_base_name + "applied_shear_stress")),
     _d(coupledValue("d")),
     _d_duc(getParam<Real>("d_duc")),
-    _crack_formation_degradation(declareProperty<Real>("crack_formation_degradation")), /// crack formation part
+    _crack_formation_degradation(
+        declareProperty<Real>("crack_formation_degradation")), /// crack formation part
 
     _crack_open(declareProperty<Real>("ro")),
     _crack_open_old(getMaterialPropertyOld<Real>("ro")),
@@ -84,7 +88,7 @@ ComputeGeneralizedOrowanCrackedStress::ComputeGeneralizedOrowanCrackedStress(
         getParam<MooseEnum>("crystal_lattice_type").getEnum<CrystalLatticeType>()),
     _unit_cell_dimension(getParam<std::vector<Real>>("unit_cell_dimension")),
     _zero_tol(getParam<Real>("zero_tol")),
-    _crack_open_degradation(declareProperty<Real>("crack_open_degradation")),///crack opening part
+    _crack_open_degradation(declareProperty<Real>("crack_open_degradation")), ///crack opening part
 
     _uncracked_pk2(getMaterialProperty<RankTwoTensor>("second_piola_kirchhoff_stress")),
     _uncracked_pk2_pos(declareProperty<RankTwoTensor>("pk2_pos")),
@@ -128,8 +132,12 @@ ComputeGeneralizedOrowanCrackedStress::computeCrackFormation()
     // compute degration function of damage
     Real hm = 1.0 / std::pow(_d_duc, 2) * std::pow(_d_duc - damage, 2);
     //  compute generalized energetic force
-    Real fm = 0.5 * _alpha * std::exp(-_alpha * _micro_crack_formation[_qp]) * _cp_phi_pos_old[_qp] - hm * _cm;
-    if (fm < 0){
+    Real fm = _alpha *
+                  std::exp(-_alpha * _micro_crack_formation[_qp] - _beta * _crack_open_old[_qp]) *
+                  _cp_phi_pos_old[_qp] -
+              hm * _cm;
+    if (fm < 0)
+    {
       fm = 0.0;
     }
 
@@ -137,8 +145,7 @@ ComputeGeneralizedOrowanCrackedStress::computeCrackFormation()
     std::vector<Real> dot_m(_ns, 0);
     for (const auto i : make_range(_ns))
     {
-      dot_m[i] =
-          _dot_micro_crack_formation_zero * fm * std::pow(abs(_tau[_qp][i] / _tau_d), _pm);
+      dot_m[i] = _dot_micro_crack_formation_zero * fm * std::pow(abs(_tau[_qp][i] / _tau_d), _pm);
     }
 
     // update micro cracks formation
@@ -150,10 +157,10 @@ ComputeGeneralizedOrowanCrackedStress::computeCrackFormation()
 }
 
 /// should be in line with generalized energetic force of crack formation
-void 
+void
 ComputeGeneralizedOrowanCrackedStress::computeCrackFormationDegradation()
 {
-  _crack_formation_degradation[_qp] = 0.5 * std::exp(-_alpha * _micro_crack_formation[_qp]);
+  _crack_formation_degradation[_qp] = std::exp(-_alpha * _micro_crack_formation[_qp]);
 }
 
 void
@@ -314,14 +321,17 @@ ComputeGeneralizedOrowanCrackedStress::computeCrackOpen()
   {
     _sigma[_qp][i] = _uncracked_pk2[_qp].doubleContraction(_normal_tensor[_qp][i]);
     sigma[i] = _sigma[_qp][i];
-    if (sigma[i] < 0){
+    if (sigma[i] < 0)
+    {
       sigma[i] = 0.0;
     }
   }
   // compute degration function of damage
   Real ho = std::pow(1.0 - damage, 2);
   //  compute generalized energetic force
-  Real fo = 0.5 * _beta * std::exp(-_beta * _crack_open[_qp]) * _cp_phi_pos_old[_qp] - ho * _co;
+  Real fo = _beta * std::exp(-_beta * _crack_open[_qp] - _alpha * _micro_crack_formation_old[_qp]) *
+                _cp_phi_pos_old[_qp] -
+            ho * _co;
   if (fo < 0)
   {
     fo = 0.0;
@@ -341,26 +351,27 @@ ComputeGeneralizedOrowanCrackedStress::computeCrackOpen()
 }
 
 /// should be in line with generalized energetic force of crack opening
-void 
+void
 ComputeGeneralizedOrowanCrackedStress::computeCrackOpenDegradation()
 {
-  _crack_open_degradation[_qp] = 0.5 * std::exp(-_beta * _crack_open[_qp]);
+  _crack_open_degradation[_qp] = std::exp(-_beta * _crack_open[_qp]);
 }
 
 void
 ComputeGeneralizedOrowanCrackedStress::computeQpProperties()
 {
-  // compute micro crack formation using old strain energy 
+  // compute micro crack formation using old strain energy
   computeCrackFormation();
-  // compute crack formation degradation using current crack formation 
+  // compute crack formation degradation using current crack formation
   computeCrackFormationDegradation();
   // compute crack opening using old strain energy
   computeCrackOpen();
   // compute crack open degradation using current crack open
   computeCrackOpenDegradation();
   // compute strain increment
-  RankTwoTensor strain_increment = _total_lagrangian_strain[_qp] - _total_lagrangian_strain_old[_qp];
-   // Create the positive and negative projection tensors
+  RankTwoTensor strain_increment =
+      _total_lagrangian_strain[_qp] - _total_lagrangian_strain_old[_qp];
+  // Create the positive and negative projection tensors
   RankFourTensor I4sym(RankFourTensor::initIdentitySymmetricFour);
   std::vector<Real> eigval;
   RankTwoTensor eigvec;
@@ -372,11 +383,14 @@ ComputeGeneralizedOrowanCrackedStress::computeQpProperties()
   RankTwoTensor uncracked_pk2_neg = Pneg * _uncracked_pk2[_qp];
 
   // compute cracked stress
-  _cracked_pk2[_qp] = _uncracked_pk2_pos[_qp] * (_crack_formation_degradation[_qp] + _crack_open_degradation[_qp]) + uncracked_pk2_neg;
+  _cracked_pk2[_qp] =
+      _uncracked_pk2_pos[_qp] * (_crack_formation_degradation[_qp] * _crack_open_degradation[_qp]) +
+      uncracked_pk2_neg;
   // compute tensile part strain energy
   _cp_phi_pos[_qp] =
-        _cp_phi_pos_old[_qp] +
-        MetaPhysicL::raw_value(_uncracked_pk2_pos[_qp])
-                .doubleContraction(MetaPhysicL::raw_value(strain_increment)) / 2.0 +
-        _uncracked_pk2_pos_old[_qp].doubleContraction(MetaPhysicL::raw_value(strain_increment)) / 2.0;
+      _cp_phi_pos_old[_qp] +
+      MetaPhysicL::raw_value(_uncracked_pk2_pos[_qp])
+              .doubleContraction(MetaPhysicL::raw_value(strain_increment)) /
+          2.0 +
+      _uncracked_pk2_pos_old[_qp].doubleContraction(MetaPhysicL::raw_value(strain_increment)) / 2.0;
 }

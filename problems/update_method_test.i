@@ -198,7 +198,7 @@
     number_slip_systems = 12
     dot_m0 = 0.2
     alpha = 1.0
-    cm = 0.3
+    cm = 0.5
     tau_d = 71.0
     pm = 3
     d = d
@@ -206,7 +206,7 @@
 
     dot_o0 = 0.5
     beta = 1.0
-    co = 0.5
+    co = 0.7
     sigma_d = 53.0
     po = 5
     slip_sys_file_name = input_slip_sys.txt
@@ -237,7 +237,7 @@
     material_property_names = 'd_duc mf'
     coupled_variables = 'd'
     constant_names = 'cm'
-    constant_expressions = '0.3'
+    constant_expressions = '0.5'
     expression = '1.0/d_duc^2 * (d_duc - d)^2 * cm * mf'
     derivative_order = 2
   [../]
@@ -255,7 +255,7 @@
     material_property_names = 'ro'
     coupled_variables = 'd'
     constant_names = 'co'
-    constant_expressions = '0.5'
+    constant_expressions = '0.7'
     expression = '(1 - d)^2 * co * ro'
     derivative_order = 2
   [../]
@@ -343,14 +343,21 @@
   nl_rel_tol = 1e-10
   nl_abs_step_tol = 1e-10
 
-  dt = 0.025
-  dtmin = 0.001
-  dtmax = 10.0
+  # dt = 0.025
+  # dtmin = 0.001
+  # dtmax = 10.0
   num_steps = 50
-  [./Predictor]
-    type = SimplePredictor
-    scale = 1.0
+  [./TimeStepper]
+    type = IterationAdaptiveDT
+    dt = 0.025
+    growth_factor = 1.2
+    cutback_factor = 0.8
+    optimal_iterations = 8
   [../]
+  # [./Predictor]
+  #   type = SimplePredictor
+  #   scale = 1.0
+  # [../]
 []
 
 [Outputs]

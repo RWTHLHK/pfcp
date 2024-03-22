@@ -13,6 +13,7 @@ ComputeGeneralizedOrowanCrackedStress2::validParams()
   params.addRequiredParam<Real>("dot_m0", "initial formation rate");
   params.addRequiredParam<Real>("alpha", "micro formation degradation coefficient");
   params.addRequiredParam<Real>("cm", "micro crack free energy coeffiecient");
+  params.addRequiredParam<Real>("pm", "degree of tau/tau_d");
   params.addRequiredParam<Real>("tau_d",
                                 "critical resolved shear stress to trigger micro crack formation");
   params.addRequiredParam<unsigned int>("number_slip_systems",
@@ -22,6 +23,7 @@ ComputeGeneralizedOrowanCrackedStress2::validParams()
   params.addRequiredParam<Real>("dot_o0", "initial crack rate");
   params.addRequiredParam<Real>("beta", "crack opening coefficient");
   params.addRequiredParam<Real>("co", "crack opening free energy coeffiecient");
+  params.addRequiredParam<Real>("po", "degree of sigma/sigma_d");
   params.addRequiredParam<Real>("sigma_d",
                                 "critical resolved normal stress to trigger crack opening");
   params.addRequiredParam<Real>("g0", "initial fracture toughness");
@@ -68,6 +70,7 @@ ComputeGeneralizedOrowanCrackedStress2::ComputeGeneralizedOrowanCrackedStress2(
     _dot_micro_crack_formation_zero(getParam<Real>("dot_m0")),
     _alpha(getParam<Real>("alpha")),
     _cm(getParam<Real>("cm")),
+    _pm(getParam<Real>("pm")),
     _tau_d(getParam<Real>("tau_d")),
     _tau(getMaterialProperty<std::vector<Real>>(_uncracked_base_name + "applied_shear_stress")),
     _d(coupledValue("d")),
@@ -80,6 +83,7 @@ ComputeGeneralizedOrowanCrackedStress2::ComputeGeneralizedOrowanCrackedStress2(
     _dot_crack_open_zero(getParam<Real>("dot_o0")),
     _beta(getParam<Real>("beta")),
     _co(getParam<Real>("co")),
+    _po(getParam<Real>("po")),
     _sigma(declareProperty<std::vector<Real>>("resolved_normal_stress")),
     _sigma_d(getParam<Real>("sigma_d")),
     _normal_tensor(declareProperty<std::vector<RankTwoTensor>>("normal_tensor")),
@@ -145,8 +149,8 @@ ComputeGeneralizedOrowanCrackedStress2::computeCrackFormation()
   const Real damage = _d[_qp];
   Real hm = std::pow(1.0 - damage, 2);
   // compute fracture energy
-  //  compute generalized energetic force
-  Real fm = - (hm * _cm + _alpha * (_gf - _g0) * 
+  //  compute generalized energetic force(phim = cm * mf * mf)
+  Real fm = - (hm * _cm * 2.0 * _micro_crack_formation_old[_qp] + _alpha * (_gf - _g0) * 
                 std::exp(-_alpha * _micro_crack_formation_old[_qp] - _beta * _crack_open_old[_qp]) *
                 _phi_f[_qp]);
   if (fm < 0)
@@ -157,7 +161,7 @@ ComputeGeneralizedOrowanCrackedStress2::computeCrackFormation()
   std::vector<Real> dot_m(_ns, 0);
   for (const auto i : make_range(_ns))
   {
-    dot_m[i] = _dot_micro_crack_formation_zero * fm * std::exp(abs(_tau[_qp][i]) - _tau_d);
+    dot_m[i] = _dot_micro_crack_formation_zero * fm * std::pow(abs(_tau[_qp][i]/ _tau_d), _pm);
   }
   _micro_crack_formation[_qp] = _micro_crack_formation_old[_qp];
   // update micro cracks formation
@@ -318,16 +322,21 @@ ComputeGeneralizedOrowanCrackedStress2::computeCrackOpen()
       }
   }
 
+  std::vector<Real> sigma(_ns, 0.0);
   for (const auto i : make_range(_ns))
   {
     _sigma[_qp][i] = _uncracked_pk2[_qp].doubleContraction(_normal_tensor[_qp][i]);
+    sigma[i] = _sigma[_qp][i];
+    if(sigma[i] < 0){
+      sigma[i] = 0.0;
+    }
   }
   // compute crack open
   // compute degration function of damage
   const Real damage = _d[_qp];
   Real ho = std::pow(1.0 - damage, 2);
   //  compute generalized energetic force
-  Real fo = - (ho * _co + _beta * (_gf - _g0) * 
+  Real fo = - (ho * _co * 2.0 * _crack_open_old[_qp] + _beta * (_gf - _g0) * 
                 std::exp(-_alpha * _micro_crack_formation_old[_qp] - _beta * _crack_open_old[_qp]) *
                 _phi_f[_qp]);
   if (fo < 0)
@@ -338,7 +347,7 @@ ComputeGeneralizedOrowanCrackedStress2::computeCrackOpen()
   std::vector<Real> dot_o(_ns, 0);
   for (const auto i : make_range(_ns))
   {
-    dot_o[i] = _dot_crack_open_zero * fo * std::exp(_sigma[_qp][i] - _sigma_d);
+    dot_o[i] = _dot_crack_open_zero * fo * std::pow(sigma[i] / _sigma_d, _po);
   }
   _crack_open[_qp] = _crack_open_old[_qp];
   // update micro cracks formation

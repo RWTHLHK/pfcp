@@ -210,17 +210,19 @@
     type = ComputeGeneralizedOrowanCrackedStress2
     uncracked_base_name = uncracked
     number_slip_systems = 12
-    g0 = 2.0
+    g0 = 5.0
     gf = 1e-4
     alpha = 1.0
-    dot_m0 = 0.01
+    dot_m0 = 0.1
     cm = 1.0
+    pm = 10.0
     tau_d = 71.0
     d = d
 
     beta = 1.0
-    dot_o0 = 0.01
+    dot_o0 = 0.1
     co = 1.0
+    po = 10.0
     sigma_d = 53.0
     slip_sys_file_name = input_slip_sys.txt
   [../]
@@ -359,6 +361,10 @@
     type = ElementAverageValue
     variable = c1
   [../]
+  [./gc_prop]
+    type = ElementAverageMaterialProperty
+    mat_prop = gc_prop
+  [../]
 []
 
 [Preconditioning]
@@ -378,13 +384,20 @@
   nl_rel_tol = 1e-10
   nl_abs_step_tol = 1e-10
 
-  dt = 0.025
-  dtmin = 0.001
-  dtmax = 10.0
-  num_steps = 20
-  [./Predictor]
-    type = SimplePredictor
-    scale = 1.0
+  # dt = 0.025
+  # dtmin = 0.001
+  # dtmax = 10.0
+  num_steps = 50
+  # [./Predictor]
+  #   type = SimplePredictor
+  #   scale = 1.0
+  # [../]
+  [./TimeStepper]
+    type = IterationAdaptiveDT
+    dt = 0.025
+    growth_factor = 1.2
+    cutback_factor = 0.8
+    optimal_iterations = 8
   [../]
 []
 

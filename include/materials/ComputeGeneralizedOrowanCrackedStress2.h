@@ -50,6 +50,8 @@ protected:
   const Real _alpha;
   // micro crack free energy coeffiecient
   const Real _cm;
+  // degree of tau/tau_d
+  const Real _pm;
   // critical resolved shear stress to trigger micro crack formation
   const Real _tau_d;
   // resolved shear stress
@@ -70,6 +72,8 @@ protected:
   const Real _beta;
   // micro crack free energy coeffiecient
   const Real _co;
+  // degree of sigma / sigma_d
+  const Real _po;
   // critical resolved normal stress to trigger micro crack formation
   // resolved normal stress
   MaterialProperty<std::vector<Real>> &_sigma;
